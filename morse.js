@@ -407,7 +407,7 @@ function start(e) {
   const puzzles = [
     new Puzzle('..-.---.-..-...--..--.-.--...--.-..-.-.---...--..-.--.-...--.-.---..-..--..-', 'dash at end'),
     new Puzzle('..-.---.-..-...--..--.-.--...--.-..-.-.---...--..-.--.-...--.-.---..-..--...', 'dot at end')
-  ]
+  ];
 
   addTransformationsToWordList(wordList, transformations);
 
