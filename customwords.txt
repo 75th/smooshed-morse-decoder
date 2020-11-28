@@ -1,5 +1,3 @@
-#factor 3
-
 75th
 Seventy
 Fifth
@@ -63,10 +61,6 @@ d'ni
 dni
 aegura
 ae'gura
-
-
-#factor 1
-
 0
 1
 2

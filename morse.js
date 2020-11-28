@@ -1,7 +1,10 @@
 'use strict';
 
-function morse(s) {
-	const tab = { // Courtesy of http://svn.python.org/projects/python/trunk/Demo/scripts/morse.py
+/**
+ * Returns the morse code equivalent of a text string.
+ */
+function morse(plaintext) {
+	const code = { // Courtesy of http://svn.python.org/projects/python/trunk/Demo/scripts/morse.py
     'A': '.-',              'a': '.-',
     'B': '-...',            'b': '-...',
     'C': '-.-.',            'c': '-.-.',
@@ -43,24 +46,32 @@ function morse(s) {
   }
 
   var output = '';
-  for (let i = 0; i < s.length; i++) {
-    let char = s.slice(i, i + 1);
-    if (char in tab) {
-      output = output + tab[s[i]];
+  for (let i = 0; i < plaintext.length; i++) {
+    let character = plaintext.slice(i, i + 1);
+    if (character in code) {
+      output = output + code[character];
     }
 
-    if (char === ' ') {
+    if (character === ' ') {
       output = output + ' ';
     }
   }
   return output;
 }
 
+function escapeRegExp(string) { // Courtesy of https://stackoverflow.com/questions/3446170/escape-string-for-use-in-javascript-regex
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
+}
+
 /**
  * Port of Python `string.find()`.
  */
 function find(s, sub, start = 0, end = undefined) {
-  return s.slice(start, end).search(sub) + start;
+  if (!s || !sub) {
+    return -1;
+  }
+
+  return s.slice(start, end).search(escapeRegExp(sub));
 }
 
 /**
@@ -73,8 +84,8 @@ function findAll(s, sub, result = [], start = 0) {
     return result;
   }
 
-  result.push(newLocation);
-  result = findAll(s, sub, result, newLocation + 1);
+  result.push(newLocation + start);
+  result = findAll(s, sub, result, newLocation + start + 1);
   return result;
 }
 
@@ -93,7 +104,10 @@ function addTransformationsToWordList(wordList, transformations) {
   const length = wordList.length;
 
   for (let word in wordList) {
-    for (let trans in transformations) {
+    wordList[word]['transformations'] = {};
+    for (let transKey in transformations) {
+      let trans = transformations[transKey];
+
       wordList[word]['transformations'][trans.description] = {
         morse: trans.transform(word)
       };
@@ -101,12 +115,14 @@ function addTransformationsToWordList(wordList, transformations) {
   }
 }
 
-function addIndicesToWordList(wordList, puzzle) {
+function addIndicesToWordList(wordList, puzzles) {
   for (let word in wordList) {
     for (let transformation in wordList[word]['transformations']) {
-      wordList[word]['transformations'][transformation]['indices'] =
-        findAll(puzzle, wordList[word]['transformations'][transformation]['morse'])
-      ;
+      wordList[word]['transformations'][transformation]['indices'] = [];
+      for (let i = 0; i < puzzles.length; i++) {
+        let indices = findAll(puzzles[i].ciphertext, wordList[word]['transformations'][transformation]['morse']);
+        wordList[word]['transformations'][transformation]['indices'].push(indices);
+      }
     }
   }
 }
@@ -188,6 +204,7 @@ function nextWordsFromWordList(wordList, transformation, startingIndex = 0, allo
       });
     }
   }
+
   nextWordCandidates.sort((a, b) => {
     var comparison = a.index - b.index;
 
@@ -287,7 +304,7 @@ function flattenCombinations(resultTree, currentCombo = [], allCombos = []) {
   return allCombos;
 }
 
-async function getWordListFromFiles(filenames ) {
+async function getWordListFromFiles(filenames) {
   Promise.all(
     filenames.map(
       filename => {
@@ -393,6 +410,17 @@ if(!String.prototype.reverse) {
   }
 }
 
+function logWordListSamples(wordList, numberOfSamples = 20) {
+  const wordArray = Object.keys(wordList);
+  const length = wordArray.length;
+  const fraction = Math.floor(length / numberOfSamples);
+
+  for (let sampleIndex = 0; sampleIndex <= numberOfSamples; sampleIndex++) {
+    let wordIndex = sampleIndex * fraction;
+    console.log(wordArray[wordIndex], wordList[wordArray[wordIndex]]);
+  }
+}
+
 function start(e) {
   const wordArray = e.detail.split("\n");
   const wordList = initializeWordList(wordArray);
@@ -409,7 +437,17 @@ function start(e) {
     new Puzzle('..-.---.-..-...--..--.-.--...--.-..-.-.---...--..-.--.-...--.-.---..-..--...', 'dot at end')
   ];
 
+  console.log('addTransformationsToWordList');
   addTransformationsToWordList(wordList, transformations);
+
+  console.log('addIndicesToWordList');
+  addIndicesToWordList(wordList, puzzles);
+
+  // logWordListSamples(wordList);
+
+
+
+
 
   /*
   const results = loadResults();
